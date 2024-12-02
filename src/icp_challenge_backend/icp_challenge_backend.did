@@ -1,3 +1,8 @@
 service : {
-    "greet": (text) -> (text) query;
+    "submit_claim": (text, nat64, text, vec text) -> (variant { Ok: text; Err: text });
+    "review_claim": (text, bool) -> (variant { Ok: variant { Submitted; UnderReview; Verified; Rejected; Approved; Paid }; Err: text });
+    "process_claim": (text) -> (variant { Ok: null; Err: text });
+    "register_policy": (text, nat64) -> (variant { Ok: text; Err: text });
+    "get_claim": (text) -> (opt record { id: text; claimant: principal; policy_type: text; claim_amount: nat64; description: text; supporting_documents: vec text; status: variant { Submitted; UnderReview; Verified; Rejected; Approved; Paid }; timestamp: nat64 }) query;
+    "get_policy": (text) -> (opt record { id: text; policy_holder: principal; policy_type: text; coverage_amount: nat64; active: bool }) query;
 }
