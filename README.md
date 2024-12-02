@@ -1,61 +1,74 @@
-# `icp_challenge`
+# ICP Challenge Backend
 
-Welcome to your new `icp_challenge` project and to the Internet Computer development community. By default, creating a new project adds this README and some template files to your project directory. You can edit these template files to customize your project and to include your own code to speed up the development cycle.
+This project is a backend service for managing insurance claims and policies on the Internet Computer. It provides functionalities to submit, review, and process insurance claims, as well as register new policies.
 
-To get started, you might want to explore the project directory structure and the default configuration file. Working with this project in your development environment will not affect any production deployment or identity tokens.
+## Features
 
-To learn more before you start working with `icp_challenge`, see the following documentation available online:
+- **Submit Claims**: Users can submit claims against their insurance policies.
+- **Review Claims**: Claims can be reviewed and either verified or rejected.
+- **Process Claims**: Verified claims can be processed for payment.
+- **Register Policies**: New insurance policies can be registered.
 
-- [Quick Start](https://internetcomputer.org/docs/current/developer-docs/setup/deploy-locally)
-- [SDK Developer Tools](https://internetcomputer.org/docs/current/developer-docs/setup/install)
-- [Rust Canister Development Guide](https://internetcomputer.org/docs/current/developer-docs/backend/rust/)
-- [ic-cdk](https://docs.rs/ic-cdk)
-- [ic-cdk-macros](https://docs.rs/ic-cdk-macros)
-- [Candid Introduction](https://internetcomputer.org/docs/current/developer-docs/backend/candid/)
+## Prerequisites
 
-If you want to start working on your project right away, you might want to try the following commands:
+Before running the project, ensure you have the following installed:
 
-```bash
-cd icp_challenge/
-dfx help
-dfx canister --help
-```
+- **Rust**: Install Rust from [rust-lang.org](https://www.rust-lang.org/tools/install).
+- **DFX SDK**: Install the DFX SDK from [internetcomputer.org](https://internetcomputer.org/docs/current/developer-docs/setup/install).
 
-## Running the project locally
+## Project Structure
 
-If you want to test your project locally, you can use the following commands:
+- **src/icp_challenge_backend/src/lib.rs**: Contains the main data structures and logic for claims and policies.
+- **src/icp_challenge_backend/src/update.rs**: Contains update functions for submitting, reviewing, and processing claims, as well as registering policies.
+- **src/icp_challenge_backend/src/query.rs**: Contains query functions to retrieve claims and policies.
 
-```bash
-# Starts the replica, running in the background
-dfx start --background
+## Running the Project Locally
 
-# Deploys your canisters to the replica and generates your candid interface
-dfx deploy
-```
+To test the project locally, follow these steps:
 
-Once the job completes, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
+1. **Start the Internet Computer Replica**: This will run the replica in the background.
+   ```bash
+   dfx start --background
+   ```
 
-If you have made changes to your backend canister, you can generate a new candid interface with
+2. **Deploy the Canisters**: Deploy your canisters to the replica and generate the candid interface.
+   ```bash
+   dfx deploy
+   ```
 
-```bash
-npm run generate
-```
+3. **Access the Application**: Once deployed, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
 
-at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
+## Testing the Canister
 
-If you are making frontend changes, you can start a development server with
+To test the canister, you can use the following input data:
 
-```bash
-npm start
-```
+1. **Submit a Claim**:
+   - **Policy Type**: A string representing the type of policy (e.g., "auto", "home").
+   - **Claim Amount**: A numeric value representing the amount claimed (e.g., 1000).
+   - **Description**: A string describing the claim (e.g., "Accident on highway").
+   - **Supporting Documents**: A vector of strings representing document identifiers (e.g., ["doc1", "doc2"]).
 
-Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
+2. **Review a Claim**:
+   - **Claim ID**: A string representing the unique identifier of the claim.
+   - **Verification Status**: A boolean indicating whether the claim is verified (true) or rejected (false).
 
-### Note on frontend environment variables
+3. **Process a Claim**:
+   - **Claim ID**: A string representing the unique identifier of the claim to be processed.
 
-If you are hosting frontend code somewhere without using DFX, you may need to make one of the following adjustments to ensure your project does not fetch the root key in production:
+4. **Register a Policy**:
+   - **Policy Type**: A string representing the type of policy (e.g., "auto", "home").
+   - **Coverage Amount**: A numeric value representing the coverage amount (e.g., 5000).
 
-- set`DFX_NETWORK` to `ic` if you are using Webpack
-- use your own preferred method to replace `process.env.DFX_NETWORK` in the autogenerated declarations
-  - Setting `canisters -> {asset_canister_id} -> declarations -> env_override to a string` in `dfx.json` will replace `process.env.DFX_NETWORK` with the string in the autogenerated declarations
-- Write your own `createActor` constructor
+5. **Retrieve a Claim**:
+   - **Claim ID**: A string representing the unique identifier of the claim to be retrieved.
+
+6. **Retrieve a Policy**:
+   - **Policy ID**: A string representing the unique identifier of the policy to be retrieved.
+
+## Dependencies
+
+- **candid**: For Candid type serialization and deserialization.
+- **ic-cdk**: For interacting with the Internet Computer.
+- **serde**: For serialization/deserialization.
+- **serde_json**: For JSON handling.
+
