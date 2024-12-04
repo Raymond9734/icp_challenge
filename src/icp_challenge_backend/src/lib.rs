@@ -14,7 +14,45 @@ pub enum ClaimStatus {
     Paid,
 }
 
-#[derive(CandidType, Deserialize, Clone)]
+#[derive(CandidType, Deserialize, Clone, Debug)]
+pub struct Policy {
+    pub id: String,
+    pub policy_holder: Principal,
+    pub policy_type: String,
+    pub coverage_amount: u64,
+    pub active: bool,
+    pub created_at: u64,
+    pub last_modified: u64,
+}
+
+impl Policy {
+    pub fn new(
+        id: String,
+        policy_holder: Principal,
+        policy_type: String,
+        coverage_amount: u64,
+    ) -> Self {
+        let now = ic_cdk::api::time();
+        Self {
+            id,
+            policy_holder,
+            policy_type,
+            coverage_amount,
+            active: true,
+            created_at: now,
+            last_modified: now,
+        }
+    }
+}
+
+#[derive(CandidType, Deserialize, Clone, Debug)]
+pub struct ClaimHistory {
+    pub status: ClaimStatus,
+    pub timestamp: u64,
+    pub notes: String,
+}
+
+#[derive(CandidType, Deserialize, Clone, Debug)]
 pub struct Claim {
     id: String,
     claimant: Principal,
@@ -24,15 +62,7 @@ pub struct Claim {
     supporting_documents: Vec<String>,
     status: ClaimStatus,
     timestamp: u64,
-}
-
-#[derive(CandidType, Deserialize, Clone)]
-pub struct Policy {
-    id: String,
-    policy_holder: Principal,
-    policy_type: String,
-    coverage_amount: u64,
-    active: bool,
+    pub history: Vec<ClaimHistory>,
 }
 
 #[derive(Default)]
