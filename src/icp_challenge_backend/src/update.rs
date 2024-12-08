@@ -27,6 +27,23 @@ fn submit_claim(
             return Err("Unauthorized claim submission".to_string());
         }
 
+        // Validate the claim
+        if !InsuranceClaimProcessor::verify_claim_eligibility(
+            &Claim {
+                id: String::new(),
+                claimant: ic_cdk::caller(),
+                policy_type: policy.policy_type.clone(),
+                claim_amount,
+                description: description.clone(),
+                supporting_documents: supporting_documents.clone(),
+                status: ClaimStatus::Submitted,
+                timestamp: ic_cdk::api::time(),
+            },
+            &policy,
+        ) {
+            return Err("Claim is not eligible".to_string());
+        }
+
         // Create the new claim
         let new_claim = Claim {
             id: storage_mut.generate_claim_id(),
