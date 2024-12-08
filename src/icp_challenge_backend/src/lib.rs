@@ -39,6 +39,8 @@ pub struct Policy {
 struct InsuranceClaimProcessor {
     claims: HashMap<String, Claim>,
     policies: HashMap<String, Policy>,
+    claim_counter: u64,
+    policy_counter: u64,
 }
 
 thread_local! {
@@ -46,22 +48,23 @@ thread_local! {
 }
 
 impl InsuranceClaimProcessor {
-    fn generate_claim_id() -> String {
-        // Generate a unique claim ID 
-        format!("claim_{}", ic_cdk::api::time())
+    fn generate_claim_id(&mut self) -> String {
+        self.claim_counter += 1;
+        format!("claim_{}", self.claim_counter)
+    }
+
+    fn generate_policy_id(&mut self) -> String {
+        self.policy_counter += 1;
+        format!("policy_{}", self.policy_counter)
     }
 
     fn verify_claim_eligibility(claim: &Claim, policy: &Policy) -> bool {
-        // Check policy is active
         if !policy.active {
             return false;
         }
-
-        // Check claim amount within coverage
         if claim.claim_amount > policy.coverage_amount {
             return false;
         }
-
         true
     }
 }

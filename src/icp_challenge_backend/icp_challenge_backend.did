@@ -1,8 +1,40 @@
+type Claim = record {
+  id : text;
+  status : ClaimStatus;
+  claimant : principal;
+  description : text;
+  timestamp : nat64;
+  policy_type : text;
+  supporting_documents : vec text;
+  claim_amount : nat64;
+};
+type ClaimStatus = variant {
+  UnderReview;
+  Paid;
+  Approved;
+  Rejected;
+  Submitted;
+  Verified;
+};
+type Policy = record {
+  id : text;
+  coverage_amount : nat64;
+  policy_holder : principal;
+  active : bool;
+  policy_type : text;
+};
+type Result = variant { Ok; Err : text };
+type Result_1 = variant { Ok : Claim; Err : text };
+type Result_2 = variant { Ok : Policy; Err : text };
+type Result_3 = variant { Ok : text; Err : text };
+type Result_4 = variant { Ok : ClaimStatus; Err : text };
 service : {
-    "submit_claim": (text, nat64, text, vec text) -> (variant { Ok: text; Err: text });
-    "review_claim": (text, bool) -> (variant { Ok: variant { Submitted; UnderReview; Verified; Rejected; Approved; Paid }; Err: text });
-    "process_claim": (text) -> (variant { Ok: null; Err: text });
-    "register_policy": (text, nat64) -> (variant { Ok: text; Err: text });
-    "get_claim": (text) -> (opt record { id: text; claimant: principal; policy_type: text; claim_amount: nat64; description: text; supporting_documents: vec text; status: variant { Submitted; UnderReview; Verified; Rejected; Approved; Paid }; timestamp: nat64 }) query;
-    "get_policy": (text) -> (opt record { id: text; policy_holder: principal; policy_type: text; coverage_amount: nat64; active: bool }) query;
+  deactivate_policy : (text) -> (Result);
+  get_claim : (text) -> (Result_1) query;
+  get_policy : (text) -> (Result_2) query;
+  process_claim : (text) -> (Result);
+  register_policy : (text, nat64) -> (Result_3);
+  review_claim : (text, bool) -> (Result_4);
+  submit_claim : (text, nat64, text, vec text) -> (Result_3);
+  update_policy_coverage : (text, nat64) -> (Result);
 }
