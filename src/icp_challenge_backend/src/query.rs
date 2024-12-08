@@ -2,9 +2,9 @@ use ic_cdk::query;
 use crate::{STORAGE, Claim, Policy};
 
 #[query]
-fn get_claim(claim_id: String) -> Result<Claim, String> {
+fn get_claim(claim_id: String) -> Option<Claim> {
     STORAGE.with(|storage| {
-        storage.borrow().claims.get(&claim_id).cloned().ok_or_else(|| "Claim not found".to_string())
+        storage.borrow().claims.get(&claim_id).cloned()
     })
 }
 
