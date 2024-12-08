@@ -8,25 +8,47 @@ fn submit_claim(
     description: String,
     supporting_documents: Vec<String>,
 ) -> Result<String, String> {
+    if policy_id.is_empty() || description.is_empty() || supporting_documents.is_empty() {
+        return Err("All fields are required".to_string());
+    }
+
     STORAGE.with(|storage| {
         let mut storage_mut = storage.borrow_mut();
 
-        // Retrieve policy
+        // Retrieve the policy
         let policy = storage_mut
             .policies
             .get(&policy_id)
-            .ok_or_else(|| "Policy not found".to_string())?;
+            .ok_or_else(|| "Policy not found".to_string())?
+            .clone(); // Clone to drop the immutable borrow
 
-        // Check policy belongs to claimant
+        // Check if the caller is authorized
         if policy.policy_holder != ic_cdk::caller() {
             return Err("Unauthorized claim submission".to_string());
         }
 
-        // Create new claim
+        // Validate the claim
+        if !InsuranceClaimProcessor::verify_claim_eligibility(
+            &Claim {
+                id: String::new(),
+                claimant: ic_cdk::caller(),
+                policy_type: policy.policy_type.clone(),
+                claim_amount,
+                description: description.clone(),
+                supporting_documents: supporting_documents.clone(),
+                status: ClaimStatus::Submitted,
+                timestamp: ic_cdk::api::time(),
+            },
+            &policy,
+        ) {
+            return Err("Claim is not eligible".to_string());
+        }
+
+        // Create the new claim
         let new_claim = Claim {
-            id: InsuranceClaimProcessor::generate_claim_id(),
+            id: storage_mut.generate_claim_id(),
             claimant: ic_cdk::caller(),
-            policy_type: policy.policy_type.clone(),
+            policy_type: policy.policy_type,
             claim_amount,
             description,
             supporting_documents,
@@ -34,12 +56,7 @@ fn submit_claim(
             timestamp: ic_cdk::api::time(),
         };
 
-        // Validate claim
-        if !InsuranceClaimProcessor::verify_claim_eligibility(&new_claim, policy) {
-            return Err("Claim does not meet eligibility criteria".to_string());
-        }
-
-        // Store claim
+        // Store the claim
         let claim_id = new_claim.id.clone();
         storage_mut.claims.insert(claim_id.clone(), new_claim);
 
@@ -49,64 +66,61 @@ fn submit_claim(
 
 #[update]
 fn review_claim(claim_id: String, decision: bool) -> Result<ClaimStatus, String> {
+    if claim_id.is_empty() {
+        return Err("Claim ID is required".to_string());
+    }
+
     STORAGE.with(|storage| {
         let mut storage_mut = storage.borrow_mut();
 
-        // Retrieve claim
-        let mut claim = storage_mut
+        let claim = storage_mut
             .claims
-            .get(&claim_id)
-            .ok_or_else(|| "Claim not found".to_string())?
-            .clone();
+            .get_mut(&claim_id)
+            .ok_or_else(|| "Claim not found".to_string())?;
 
-        // Update claim status based on review
         claim.status = if decision {
             ClaimStatus::Verified
         } else {
             ClaimStatus::Rejected
         };
 
-        // Update the claim in storage
-        storage_mut.claims.insert(claim_id, claim.clone());
-
-        Ok(claim.status)
+        Ok(claim.status.clone())
     })
 }
 
 #[update]
 fn process_claim(claim_id: String) -> Result<(), String> {
+    if claim_id.is_empty() {
+        return Err("Claim ID is required".to_string());
+    }
+
     STORAGE.with(|storage| {
         let mut storage_mut = storage.borrow_mut();
 
-        // Retrieve claim
-        let mut claim = storage_mut
+        let claim = storage_mut
             .claims
-            .get(&claim_id)
-            .ok_or_else(|| "Claim not found".to_string())?
-            .clone();
+            .get_mut(&claim_id)
+            .ok_or_else(|| "Claim not found".to_string())?;
 
-        // Check claim is verified
         if claim.status != ClaimStatus::Verified {
             return Err("Claim cannot be processed".to_string());
         }
 
-        // Update claim status to paid
         claim.status = ClaimStatus::Paid;
-
-        // Update the claim in storage
-        storage_mut.claims.insert(claim_id, claim);
-
         Ok(())
     })
 }
 
 #[update]
 fn register_policy(policy_type: String, coverage_amount: u64) -> Result<String, String> {
+    if policy_type.is_empty() || coverage_amount == 0 {
+        return Err("Policy type and coverage amount are required".to_string());
+    }
+
     STORAGE.with(|storage| {
         let mut storage_mut = storage.borrow_mut();
 
-        // Generate unique policy ID
-        let policy_id = format!("policy_{}", ic_cdk::api::time());
+        let policy_id = storage_mut.generate_policy_id();
 
         let new_policy = Policy {
             id: policy_id.clone(),
@@ -119,5 +133,43 @@ fn register_policy(policy_type: String, coverage_amount: u64) -> Result<String, 
         storage_mut.policies.insert(policy_id.clone(), new_policy);
 
         Ok(policy_id)
+    })
+}
+
+#[update]
+fn deactivate_policy(policy_id: String) -> Result<(), String> {
+    if policy_id.is_empty() {
+        return Err("Policy ID is required".to_string());
+    }
+
+    STORAGE.with(|storage| {
+        let mut storage_mut = storage.borrow_mut();
+
+        let policy = storage_mut
+            .policies
+            .get_mut(&policy_id)
+            .ok_or_else(|| "Policy not found".to_string())?;
+
+        policy.active = false;
+        Ok(())
+    })
+}
+
+#[update]
+fn update_policy_coverage(policy_id: String, new_coverage: u64) -> Result<(), String> {
+    if policy_id.is_empty() || new_coverage == 0 {
+        return Err("Policy ID and new coverage amount are required".to_string());
+    }
+
+    STORAGE.with(|storage| {
+        let mut storage_mut = storage.borrow_mut();
+
+        let policy = storage_mut
+            .policies
+            .get_mut(&policy_id)
+            .ok_or_else(|| "Policy not found".to_string())?;
+
+        policy.coverage_amount = new_coverage;
+        Ok(())
     })
 }
